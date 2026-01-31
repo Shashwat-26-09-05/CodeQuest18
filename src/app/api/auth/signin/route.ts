@@ -7,10 +7,28 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email } = body
 
-    // Validate input
-    if (!email) {
+    // Debug logging
+    console.log('=== SIGNIN DEBUG ===')
+    console.log('Email value:', email)
+    console.log('Email type:', typeof email)
+    console.log('Is email a string?', typeof email === 'string')
+    console.log('Full body:', body)
+    console.log('===================')
+
+    // Validate email is provided and is a string
+    if (!email || typeof email !== 'string') {
+      console.error('Email validation failed. Expected string, got:', typeof email)
       return NextResponse.json(
-        { error: 'Email is required' },
+        { error: 'Email is required and must be a valid email address' },
+        { status: 400 }
+      )
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
         { status: 400 }
       )
     }
@@ -34,10 +52,18 @@ export async function POST(request: NextRequest) {
     })
 
     // Send thank you email to user
-    const thankYouResult = await sendThankYouEmail(user.email, user.name || user.email.split('@')[0], user.id)
+    const thankYouResult = await sendThankYouEmail(
+      user.email,
+      user.name || user.email.split('@')[0],
+      user.id
+    )
 
     // Send admin notification about sign-in
-    await sendAdminSignInNotification(user.name || user.email.split('@')[0], user.email, user.id)
+    await sendAdminSignInNotification(
+      user.name || user.email.split('@')[0],
+      user.email,
+      user.id
+    )
 
     // Return user data (user doesn't have password field)
     const userWithoutPassword = user
